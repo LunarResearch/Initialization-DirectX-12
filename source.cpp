@@ -1,5 +1,4 @@
-#include <d3d12.h>
-#include <dxgi1_4.h>
+##include <d3d12.h>
 #include <wrl\client.h>
 
 #pragma comment (lib, "d3d12.lib")
@@ -14,10 +13,8 @@ ComPtr<ID3D12PipelineState> pipelineState;
 ComPtr<ID3D12GraphicsCommandList> commandList;
 ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
-ComPtr<IDXGIFactory4> factory4;
-
+ComPtr<IDXGIFactory> factory;
 ComPtr<IDXGISwapChain> swapChain;
-ComPtr<IDXGISwapChain3> swapChain3;
 
 void KeyDown(UINT8 key) {
 	if (GetAsyncKeyState(VK_ESCAPE))
@@ -35,9 +32,8 @@ void Clear() {
 	pipelineState.ReleaseAndGetAddressOf();
 	commandList.ReleaseAndGetAddressOf();
 	descriptorHeap.ReleaseAndGetAddressOf();
-	factory4.ReleaseAndGetAddressOf();
+	factory.ReleaseAndGetAddressOf();
 	swapChain.ReleaseAndGetAddressOf();
-	swapChain3.ReleaseAndGetAddressOf();
 }
 
 void Update() {
@@ -53,8 +49,7 @@ void Render() {
 	ID3D12CommandList *pCommandList[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(pCommandList), pCommandList);
 
-	DXGI_PRESENT_PARAMETERS pres = {};
-	swapChain3->Present1(1, 0, &pres);
+	swapChain->Present(1, 0);
 }
 
 void Init(_In_ HWND hWnd) {
@@ -88,10 +83,10 @@ Continue:
 	desc.SampleDesc.Count = 1;
 	desc.Windowed = TRUE;
 
-	CreateDXGIFactory1(IID_PPV_ARGS(&factory4));
-	factory4->CreateSwapChain(commandQueue.Get(), &desc, &swapChain);
+	CreateDXGIFactory1(IID_PPV_ARGS(&factory));
+	factory->CreateSwapChain(commandQueue.Get(), &desc, &swapChain);
 	
-	factory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
+	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 	heapDesc.NumDescriptors = 2;
@@ -101,8 +96,7 @@ Continue:
 	device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
 
 	ComPtr<ID3D12Resource> resource;
-	swapChain.As(&swapChain3);
-	swapChain3->GetBuffer(0, IID_PPV_ARGS(&resource));
+	swapChain->GetBuffer(0, IID_PPV_ARGS(&resource));
 	device->CreateRenderTargetView(resource.Get(), nullptr,
 		descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	resource.ReleaseAndGetAddressOf();
