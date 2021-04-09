@@ -1,5 +1,5 @@
 #include <d3d12.h>
-#include <dxgi.h>
+#include <dxgi1_6.h>
 #include <wrl\client.h>
 
 #pragma comment (lib, "d3d12.lib")
@@ -7,113 +7,112 @@
 
 using namespace Microsoft::WRL;
 
-ComPtr<ID3D12Device> device;
+ComPtr<ID3D12Device8> device8;
 ComPtr<ID3D12CommandQueue> commandQueue;
 ComPtr<ID3D12CommandAllocator> commandAllocator;
 ComPtr<ID3D12PipelineState> pipelineState;
-ComPtr<ID3D12GraphicsCommandList> commandList;
+ComPtr<ID3D12GraphicsCommandList6> commandList6;
 ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
-ComPtr<IDXGIFactory> factory;
-ComPtr<IDXGISwapChain> swapChain;
+ComPtr<IDXGIFactory7> factory7;
+ComPtr<IDXGISwapChain1> swapChain1;
 
-void KeyDown(UINT8 key) {
+void KeyDown(UINT8 key)
+{
 	if (GetAsyncKeyState(VK_ESCAPE))
 		exit(0);
 }
 
-void KeyUp(UINT8 key) {
+void KeyUp(UINT8 key)
+{
 
 }
 
-void Clear() {
-	device.ReleaseAndGetAddressOf();
+void Clear()
+{
+	device8.ReleaseAndGetAddressOf();
 	commandQueue.ReleaseAndGetAddressOf();
 	commandAllocator.ReleaseAndGetAddressOf();
 	pipelineState.ReleaseAndGetAddressOf();
-	commandList.ReleaseAndGetAddressOf();
+	commandList6.ReleaseAndGetAddressOf();
 	descriptorHeap.ReleaseAndGetAddressOf();
-	factory.ReleaseAndGetAddressOf();
-	swapChain.ReleaseAndGetAddressOf();
+	factory7.ReleaseAndGetAddressOf();
+	swapChain1.ReleaseAndGetAddressOf();
 }
 
-void Update() {
+void Update()
+{
 
 }
 
-void Render() {
+void Render()
+{
 	const float Color[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-	commandList->ClearRenderTargetView(descriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		Color, 0, nullptr);
-	commandList->Close();
+	commandList6->ClearRenderTargetView(descriptorHeap->GetCPUDescriptorHandleForHeapStart(), Color, 0, nullptr);
+	commandList6->Close();
 
-	ID3D12CommandList *pCommandList[] = { commandList.Get() };
+	ID3D12CommandList* pCommandList[] = { commandList6.Get() };
 	commandQueue->ExecuteCommandLists(_countof(pCommandList), pCommandList);
 
-	swapChain->Present(1, 0);
+	swapChain1->Present(1, 0);
 }
 
-void Init(_In_ HWND hWnd) {
-	if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device))))
+void Init(_In_ HWND hWnd)
+{
+	if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device8))))
 		goto Continue;
-	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device))))
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device8))))
 		goto Continue;
-	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_1, IID_PPV_ARGS(&device))))
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_1, IID_PPV_ARGS(&device8))))
 		goto Continue;
-	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device))))
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device8))))
 		goto Continue;
 	else {
-		MessageBox(NULL, "Your GPU doesn't support D3D_FEATURE_LEVEL_11_0 or higher.",
-			"Error", MB_ICONERROR);
+		MessageBox(nullptr, TEXT("Your GPU doesn't support D3D_FEATURE_LEVEL_11_0 or higher."), TEXT("Error"), MB_ICONERROR);
 		exit(-1);
 	}
 
 Continue:
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	D3D12_COMMAND_QUEUE_DESC queueDesc{};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
+	device8->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
 
-	DXGI_SWAP_CHAIN_DESC desc = {};
-	desc.BufferCount = 2;
-	desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	desc.OutputWindow = hWnd;
-	desc.SampleDesc.Count = 1;
-	desc.Windowed = TRUE;
+	DXGI_SWAP_CHAIN_DESC1 desc1{};
+	desc1.BufferCount = 2;
+	desc1.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc1.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	desc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	desc1.SampleDesc.Count = 1;
 
-	CreateDXGIFactory1(IID_PPV_ARGS(&factory));
-	factory->CreateSwapChain(commandQueue.Get(), &desc, &swapChain);
-	
-	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
+	CreateDXGIFactory1(IID_PPV_ARGS(&factory7));
+	factory7->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &desc1, nullptr, nullptr, &swapChain1);
 
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
 	heapDesc.NumDescriptors = 2;
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-	device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
+	device8->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
 
-	ComPtr<ID3D12Resource> resource;
-	swapChain->GetBuffer(0, IID_PPV_ARGS(&resource));
-	device->CreateRenderTargetView(resource.Get(), nullptr,
-		descriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	resource.ReleaseAndGetAddressOf();
+	ComPtr<ID3D12Resource2> resource2;
+	swapChain1->GetBuffer(NULL, IID_PPV_ARGS(&resource2));
+	device8->CreateRenderTargetView(resource2.Get(), nullptr, descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	resource2.ReleaseAndGetAddressOf();
 
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(&commandAllocator));
+	device8->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-	device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+	device8->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 
-	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(),
-		pipelineState.Get(), IID_PPV_ARGS(&commandList));
+	device8->CreateCommandList(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), pipelineState.Get(), IID_PPV_ARGS(&commandList6));
 }
 
-LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
-	switch (uMsg) {
+LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam)
+{
+	switch (message)
+	{
 	case WM_CREATE:
 		Init(hWnd);
 		return 0;
@@ -135,34 +134,40 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, 
 		Clear();
 		PostQuitMessage(0);
 		return 0;
-			
+
 	default:
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
+
 	return 0;
 }
 
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
-	WNDCLASSEX wc = {};
+int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PTCHAR lpCmdLine, _In_ int nShowCmd)
+{
+	WNDCLASSEX wc{};
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc = WindowProc;
 	wc.hInstance = hInstance;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.lpszClassName = "WindowClass";
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wc.lpszClassName = TEXT("WindowClass");
 	RegisterClassEx(&wc);
-	HWND hWnd = CreateWindow(wc.lpszClassName, "Test DirectX 12 for D3D12CreateDevice",
+
+	auto hWnd = CreateWindow(wc.lpszClassName, TEXT("Test DirectX 12 for D3D12CreateDevice"),
 		WS_SYSMENU | WS_MINIMIZEBOX,
 		(GetSystemMetrics(SM_CXSCREEN) - 1024) / 2,
 		(GetSystemMetrics(SM_CYSCREEN) - 576) / 2,
-		1024, 576, nullptr, nullptr, hInstance, 0);
-	ShowWindow(hWnd, nCmdShow);
-	MSG msg = {};
+		1024, 576, nullptr, nullptr, hInstance, NULL);
+
+	ShowWindow(hWnd, nShowCmd);
+	UpdateWindow(hWnd);
+
+	MSG msg{};
 	while (msg.message != WM_QUIT)
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		if (PeekMessage(&msg, nullptr, NULL, NULL, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-	return static_cast<char>(msg.wParam);
+
+	return (int)msg.wParam;
 }
