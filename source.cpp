@@ -1,3 +1,28 @@
+// https://docs.microsoft.com/en-us/windows/win32/direct3d11/direct3d-11-1-features?redirectedfrom=MSDN#use-direct3d-in-session-0-processes
+/*
+* Use Direct3D in Session 0 processes
+* 
+*	Starting with Windows 8 and Windows Server 2012, you can use most of the Direct3D APIs in Session 0 processes.
+* 
+*	Note
+*	These output, window, swap chain, and presentation-related APIs are not available in Session 0 processes because they don't apply to the Session 0 environment:
+*		IDXGIFactory::CreateSwapChain
+*		IDXGIFactory::GetWindowAssociation
+*		IDXGIFactory::MakeWindowAssociation
+*		IDXGIAdapter::EnumOutputs
+*		ID3D11Debug::SetFeatureMask
+*		ID3D11Debug::SetPresentPerRenderOpDelay
+*		ID3D11Debug::SetSwapChain
+*		ID3D10Debug::SetFeatureMask
+*		ID3D10Debug::SetPresentPerRenderOpDelay
+*		ID3D10Debug::SetSwapChain
+*		ID3D10Debug::SetSwapChain
+*		ID3D10Debug::SetSwapChain
+*		D3D11CreateDeviceAndSwapChain
+* 
+*	If you call one of the preceding APIs in a Session 0 process, it returns DXGI_ERROR_NOT_CURRENTLY_AVAILABLE.
+*/
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl\client.h>
