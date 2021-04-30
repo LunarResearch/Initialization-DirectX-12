@@ -169,13 +169,13 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT message, _In_ WPARAM wPara
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PTCHAR lpCmdLine, _In_ int nShowCmd)
 {
-	WNDCLASSEX wc{ sizeof(WNDCLASSEX) };
+	WNDCLASS wc{};
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc = WindowProc;
 	wc.hInstance = hInstance;
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wc.lpszClassName = TEXT("WindowClass");
-	RegisterClassEx(&wc);
+	RegisterClass(&wc);
 
 	auto hWnd = CreateWindow(wc.lpszClassName, TEXT("Test DirectX 12 for D3D12CreateDevice"),
 		WS_SYSMENU | WS_MINIMIZEBOX,
