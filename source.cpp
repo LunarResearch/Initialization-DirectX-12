@@ -27,7 +27,7 @@
 #include <dxgi1_6.h>
 #include <wrl\client.h>
 
-#pragma comment (lib, "d3d12")
+#pragma comment (lib, "d3d12.")
 #pragma comment (lib, "dxgi")
 
 using namespace Microsoft::WRL;
