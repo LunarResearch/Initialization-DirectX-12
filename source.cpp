@@ -43,7 +43,7 @@ ComPtr<ID3D12Device9> device;
 ComPtr<ID3D12CommandQueue> commandQueue;
 ComPtr<ID3D12CommandAllocator> commandAllocator;
 ComPtr<ID3D12PipelineState> pipelineState;
-ComPtr<ID3D12GraphicsCommandList6> commandList6;
+ComPtr<ID3D12GraphicsCommandList6> commandList;
 ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
 ComPtr<IDXGIFactory7> factory;
@@ -66,7 +66,7 @@ void Clear()
 	commandQueue.ReleaseAndGetAddressOf();
 	commandAllocator.ReleaseAndGetAddressOf();
 	pipelineState.ReleaseAndGetAddressOf();
-	commandList6.ReleaseAndGetAddressOf();
+	commandList.ReleaseAndGetAddressOf();
 	descriptorHeap.ReleaseAndGetAddressOf();
 	factory.ReleaseAndGetAddressOf();
 	swapChain.ReleaseAndGetAddressOf();
@@ -80,10 +80,10 @@ void Update()
 void Render()
 {
 	const float Color[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-	commandList6->ClearRenderTargetView(descriptorHeap->GetCPUDescriptorHandleForHeapStart(), Color, 0, nullptr);
-	commandList6->Close();
+	commandList->ClearRenderTargetView(descriptorHeap->GetCPUDescriptorHandleForHeapStart(), Color, 0, nullptr);
+	commandList->Close();
 
-	ID3D12CommandList* pCommandList[] = { commandList6.Get() };
+	ID3D12CommandList* pCommandList[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(pCommandList), pCommandList);
 
 	swapChain->Present(1, 0);
@@ -140,7 +140,7 @@ Continue:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 
-	device->CreateCommandList(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), pipelineState.Get(), IID_PPV_ARGS(&commandList6));
+	device->CreateCommandList(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), pipelineState.Get(), IID_PPV_ARGS(&commandList));
 }
 
 LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam)
