@@ -1,9 +1,9 @@
 // https://docs.microsoft.com/en-us/windows/win32/direct3d11/direct3d-11-1-features?redirectedfrom=MSDN#use-direct3d-in-session-0-processes
 /*
 * Use Direct3D in Session 0 processes
-* 
+*
 *	Starting with Windows 8 and Windows Server 2012, you can use most of the Direct3D APIs in Session 0 processes.
-* 
+*
 *	Note
 *	These output, window, swap chain, and presentation-related APIs are not available in Session 0 processes because they don't apply to the Session 0 environment:
 *		IDXGIFactory::CreateSwapChain
@@ -19,7 +19,7 @@
 *		ID3D10Debug::SetSwapChain
 *		ID3D10Debug::SetSwapChain
 *		D3D11CreateDeviceAndSwapChain
-* 
+*
 *	If you call one of the preceding APIs in a Session 0 process, it returns DXGI_ERROR_NOT_CURRENTLY_AVAILABLE.
 */
 
@@ -32,15 +32,22 @@
 
 using namespace Microsoft::WRL;
 
-ComPtr<ID3D12Device8> device8;
+#if defined(UNICODE) || defined(_UNICODE)
+#define _tWinMain wWinMain
+#else
+#define _tWinMain WinMain
+#endif
+
+
+ComPtr<ID3D12Device9> device;
 ComPtr<ID3D12CommandQueue> commandQueue;
 ComPtr<ID3D12CommandAllocator> commandAllocator;
 ComPtr<ID3D12PipelineState> pipelineState;
 ComPtr<ID3D12GraphicsCommandList6> commandList6;
 ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
-ComPtr<IDXGIFactory7> factory7;
-ComPtr<IDXGISwapChain1> swapChain1;
+ComPtr<IDXGIFactory7> factory;
+ComPtr<IDXGISwapChain1> swapChain;
 
 void KeyDown(UINT8 key)
 {
@@ -55,14 +62,14 @@ void KeyUp(UINT8 key)
 
 void Clear()
 {
-	device8.ReleaseAndGetAddressOf();
+	device.ReleaseAndGetAddressOf();
 	commandQueue.ReleaseAndGetAddressOf();
 	commandAllocator.ReleaseAndGetAddressOf();
 	pipelineState.ReleaseAndGetAddressOf();
 	commandList6.ReleaseAndGetAddressOf();
 	descriptorHeap.ReleaseAndGetAddressOf();
-	factory7.ReleaseAndGetAddressOf();
-	swapChain1.ReleaseAndGetAddressOf();
+	factory.ReleaseAndGetAddressOf();
+	swapChain.ReleaseAndGetAddressOf();
 }
 
 void Update()
@@ -79,18 +86,20 @@ void Render()
 	ID3D12CommandList* pCommandList[] = { commandList6.Get() };
 	commandQueue->ExecuteCommandLists(_countof(pCommandList), pCommandList);
 
-	swapChain1->Present(1, 0);
+	swapChain->Present(1, 0);
 }
 
 void Init(_In_ HWND hWnd)
 {
-	if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device8))))
+	if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device))))
 		goto Continue;
-	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device8))))
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device))))
 		goto Continue;
-	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_1, IID_PPV_ARGS(&device8))))
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device))))
 		goto Continue;
-	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device8))))
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_1, IID_PPV_ARGS(&device))))
+		goto Continue;
+	else if (SUCCEEDED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device))))
 		goto Continue;
 	else {
 		MessageBox(nullptr, TEXT("Your GPU doesn't support D3D_FEATURE_LEVEL_11_0 or higher."), TEXT("Error"), MB_ICONERROR);
@@ -102,7 +111,7 @@ Continue:
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	device8->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
+	device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
 
 	DXGI_SWAP_CHAIN_DESC1 desc1{};
 	desc1.BufferCount = 2;
@@ -111,27 +120,27 @@ Continue:
 	desc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	desc1.SampleDesc.Count = 1;
 
-	CreateDXGIFactory1(IID_PPV_ARGS(&factory7));
-	factory7->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &desc1, nullptr, nullptr, &swapChain1);
+	CreateDXGIFactory1(IID_PPV_ARGS(&factory));
+	factory->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &desc1, nullptr, nullptr, &swapChain);
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
 	heapDesc.NumDescriptors = 2;
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-	device8->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
+	device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
 
-	ComPtr<ID3D12Resource2> resource2;
-	swapChain1->GetBuffer(NULL, IID_PPV_ARGS(&resource2));
-	device8->CreateRenderTargetView(resource2.Get(), nullptr, descriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	resource2.ReleaseAndGetAddressOf();
+	ComPtr<ID3D12Resource2> resource;
+	swapChain->GetBuffer(NULL, IID_PPV_ARGS(&resource));
+	device->CreateRenderTargetView(resource.Get(), nullptr, descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	resource.ReleaseAndGetAddressOf();
 
-	device8->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
+	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-	device8->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+	device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 
-	device8->CreateCommandList(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), pipelineState.Get(), IID_PPV_ARGS(&commandList6));
+	device->CreateCommandList(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), pipelineState.Get(), IID_PPV_ARGS(&commandList6));
 }
 
 LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -167,7 +176,7 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT message, _In_ WPARAM wPara
 	return 0;
 }
 
-int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PTCHAR lpCmdLine, _In_ int nShowCmd)
+int WINAPI _tWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PTCHAR lpCmdLine, _In_ int nShowCmd)
 {
 	WNDCLASS wc{};
 	wc.style = CS_HREDRAW | CS_VREDRAW;
